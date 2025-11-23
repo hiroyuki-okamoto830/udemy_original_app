@@ -5,7 +5,7 @@ ToDo 管理アプリ（Render 用）
 - 新規追加（UI縦揃え）
 - 一覧表示
 - 削除
-- 編集（モーダルウインドウ）
+- 編集（モーダルウインドウ UI縦揃え）
 """
 
 import os
@@ -20,7 +20,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # -------------------------------------------------
-# DB URL（あなたの固定URLを残す）
+# DB URL（あなたの固定URL）
 # -------------------------------------------------
 DATABASE_URL = (
     "postgresql+psycopg2://"
@@ -51,7 +51,7 @@ Base.metadata.create_all(engine)
 
 
 # -----------------------------
-# HTML（UI調整済み）
+# HTML（モーダルUIも縦揃えに修正）
 # -----------------------------
 HTML = """
 <!doctype html>
@@ -86,7 +86,7 @@ body { font-family: sans-serif; margin: 30px; }
   box-sizing: border-box;
 }
 
-/* モーダル */
+/* モーダル（縦揃えフォーム） */
 .modal-overlay {
   position: fixed; top:0; left:0; right:0; bottom:0;
   background: rgba(0,0,0,0.4);
@@ -95,7 +95,33 @@ body { font-family: sans-serif; margin: 30px; }
 .modal {
   background:#fff; padding:20px; width:400px; border-radius:8px;
 }
+.modal form {
+  display: flex;
+  flex-direction: column;
+}
+.modal label {
+  display: block;
+  margin-bottom: 15px;
+}
+.modal label span {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+.modal input[type=text],
+.modal input[type=date],
+.modal textarea {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
 .close-btn { float:right; cursor:pointer; font-size:18px; }
+
+/* 一覧 */
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 6px; }
+th { background: #f0f0f0; }
+
 </style>
 </head>
 <body>
@@ -136,7 +162,7 @@ body { font-family: sans-serif; margin: 30px; }
   <!-- 一覧 -->
   <div class="list-box">
     <h2>ToDo一覧</h2>
-    <table border="1" cellspacing="0" cellpadding="6">
+    <table>
       <tr>
         <th>ID</th><th>タスク</th><th>説明</th><th>期日</th><th>提出先</th><th>編集</th><th>削除</th>
       </tr>
@@ -165,7 +191,7 @@ body { font-family: sans-serif; margin: 30px; }
         <!-- 削除 -->
         <td>
           <form method="POST" action="/delete/{{ item.id }}">
-            <button type="submit" onclick="return confirm("削除しますか？");">削除</button>
+            <button type="submit" onclick="return confirm('削除しますか？');">削除</button>
           </form>
         </td>
       </tr>
@@ -180,13 +206,32 @@ body { font-family: sans-serif; margin: 30px; }
   <div class="modal">
     <span class="close-btn" onclick="closeEditModal()">✖</span>
     <h3>ToDo編集</h3>
+
     <form method="POST" id="editForm">
-      <label><span>タスク</span><input type="text" name="task" id="edit_task"></label>
-      <label><span>詳細説明</span><textarea name="description" id="edit_description"></textarea></label>
-      <label><span>期日</span><input type="date" name="due" id="edit_due"></label>
-      <label><span>提出先</span><input type="text" name="submission_destination" id="edit_submission_destination"></label>
+
+      <label>
+        <span>タスク</span>
+        <input type="text" name="task" id="edit_task">
+      </label>
+
+      <label>
+        <span>詳細説明</span>
+        <textarea name="description" id="edit_description"></textarea>
+      </label>
+
+      <label>
+        <span>期日</span>
+        <input type="date" name="due" id="edit_due">
+      </label>
+
+      <label>
+        <span>提出先</span>
+        <input type="text" name="submission_destination" id="edit_submission_destination">
+      </label>
+
       <button type="submit">更新</button>
     </form>
+
   </div>
 </div>
 
@@ -197,6 +242,7 @@ function openEditModal(data) {
     document.getElementById("edit_description").value = data.description || "";
     document.getElementById("edit_due").value = data.due || "";
     document.getElementById("edit_submission_destination").value = data.submission_destination || "";
+
     document.getElementById("editForm").action = "/edit/" + data.id;
     document.getElementById("editModal").style.display = "flex";
 }
