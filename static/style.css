@@ -1,20 +1,141 @@
-body { font-family: sans-serif; margin: 30px; }
-.container { display: flex; gap: 40px; }
-form.inline { display:inline; }
+/* 全体 */
+body {
+    font-family: "Segoe UI", sans-serif;
+    margin: 40px;
+    background: #f4f4f4;
+}
 
-label { display:block; margin-top:10px; }
+.title {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+/* レイアウト */
+.container {
+    display: flex;
+    gap: 50px;
+}
+
+/* 左側フォーム（カード風） */
+.form-box {
+    width: 40%;
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+
+.form-box h2 {
+    margin-bottom: 15px;
+}
+
+/* 入力欄 */
+label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+}
+
 input[type=text], input[type=date], textarea {
-    width:100%; padding:8px; margin-top:4px;
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
 }
 
-/* モーダル */
+textarea {
+    height: 80px;
+}
+
+/* ボタン */
+.btn-primary {
+    margin-top: 20px;
+    padding: 10px 22px;
+    background: #0078ff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.btn-primary:hover {
+    opacity: 0.85;
+}
+
+/* 右側テーブル */
+.list-box {
+    width: 60%;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px 12px;
+    text-align: center;
+}
+
+th {
+    background: #eaeaea;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background: #fafafa;
+}
+
+/* 編集・削除ボタン */
+.btn-edit {
+    background: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+.btn-edit:hover { opacity: 0.85; }
+
+.btn-delete {
+    background: #d9534f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+.btn-delete:hover { opacity: 0.85; }
+
+form.inline { display: inline; }
+
+/* モーダル改善 */
 .modal-overlay {
-    position:fixed; top:0; left:0; right:0; bottom:0;
-    background:rgba(0,0,0,0.4); display:none;
-    justify-content:center; align-items:center;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    justify-content: center;
+    align-items: center;
 }
+
 .modal {
-    background:#fff; padding:20px; width:400px;
-    border-radius:8px;
+    background: #fff;
+    padding: 30px;
+    width: 420px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.25);
 }
-.close-btn { float:right; cursor:pointer; font-size:18px; }
+
+.close-btn {
+    float: right;
+    cursor: pointer;
+    font-size: 20px;
+}
