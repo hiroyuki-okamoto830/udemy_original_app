@@ -15,14 +15,9 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 from sqlalchemy.orm import declarative_base, sessionmaker
 from dotenv import load_dotenv
 
-# ------------------------
-# .env の読み込み（ローカル用）
-# ------------------------
+# .env ロード（ローカル用）
 load_dotenv()
 
-# ------------------------
-# Flask アプリ作成
-# ------------------------
 app = Flask(__name__)
 
 # -------------------------------------------------
@@ -35,16 +30,11 @@ DATABASE_URL = (
     "todolist_mvpv"
     "?sslmode=require"
 )
-
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-
 
 class Base(DeclarativeBase):
     pass
 
-# ------------------------
-# SQLAlchemy 初期化
-# ------------------------
 engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
@@ -59,14 +49,13 @@ class Todo(Base):
     task = Column(String(200), nullable=False)
     description = Column(Text)
     due = Column(Date)
-    submission_destination = Column(String(200), nullable=False)
+    submission_destination = Column(String(200))  # 任意
     created_at = Column(DateTime, default=datetime.utcnow)
 
-# 起動時にテーブル作成
 Base.metadata.create_all(engine)
 
 # ------------------------
-# HTMLテンプレート（1ファイル完結）
+# HTMLテンプレート
 # ------------------------
 HTML = """
 <!doctype html>
@@ -80,9 +69,7 @@ h1 { margin-bottom: 10px; }
 .container { display: flex; gap: 40px; }
 .form-box, .list-box { width: 50%; }
 label { display: block; margin-top: 10px; }
-input[type=text], input[type=date], textarea {
-    width: 100%; padding: 8px; margin-top: 4px;
-}
+input[type=text], input[type=date], textarea { width: 100%; padding: 8px; margin-top: 4px; }
 button { margin-top: 15px; padding: 8px 16px; }
 .error { background: #ffdede; padding: 10px; margin-bottom: 15px; }
 table { border-collapse: collapse; width: 100%; margin-top: 10px; }
@@ -106,11 +93,12 @@ th { background: #f0f0f0; }
 {% endif %}
 
 <div class="container">
+
   <!-- 左：フォーム -->
   <div class="form-box">
     <h2>新規ToDo追加</h2>
     <form method="POST">
-      <label>タスク（必須）
+      <label>タスク
         <input type="text" name="task" value="{{ form.task }}">
       </label>
 
@@ -122,7 +110,7 @@ th { background: #f0f0f0; }
         <input type="date" name="due" value="{{ form.due }}">
       </label>
 
-      <label>提出先（必須）
+      <label>提出先（任意）
         <input type="text" name="submission_destination" value="{{ form.submission_destination }}">
       </label>
 
@@ -137,21 +125,22 @@ th { background: #f0f0f0; }
       <tr>
         <th>ID</th>
         <th>タスク</th>
+        <th>詳細説明</th>  <!-- ★追加 -->
         <th>期日</th>
         <th>提出先</th>
-        <th>作成日</th>
       </tr>
       {% for item in todos %}
       <tr>
         <td>{{ item.id }}</td>
         <td>{{ item.task }}</td>
+        <td>{{ item.description or "" }}</td>   <!-- ★追加 -->
         <td>{{ item.due }}</td>
-        <td>{{ item.submission_destination }}</td>
-        <td>{{ item.created_at.strftime("%Y-%m-%d") }}</td>
+        <td>{{ item.submission_destination or "" }}</td>
       </tr>
       {% endfor %}
     </table>
   </div>
+
 </div>
 
 </body>
@@ -159,28 +148,21 @@ th { background: #f0f0f0; }
 """
 
 # ------------------------
-# ルート1本で 全機能（一覧＋登録）
+# 一覧 + 登録
 # ------------------------
 @app.route("/", methods=["GET", "POST"])
 def index():
     session = SessionLocal()
     errors = []
-    form_data = {
-        "task": "",
-        "description": "",
-        "due": "",
-        "submission_destination": "",
-    }
+    form_data = {"task": "", "description": "", "due": "", "submission_destination": ""}
 
     try:
         if request.method == "POST":
-            # 入力値取得
             task = request.form.get("task", "").strip()
             description = request.form.get("description", "").strip()
             due_str = request.form.get("due", "").strip()
             submission_destination = request.form.get("submission_destination", "").strip()
 
-            # バリデーション
             form_data.update({
                 "task": task,
                 "description": description,
@@ -191,9 +173,6 @@ def index():
             if not task:
                 errors.append("タスクは必須です。")
 
-            # if not submission_destination:
-            #     errors.append("提出先は必須です。")
-
             due_date = None
             if due_str:
                 try:
@@ -201,28 +180,21 @@ def index():
                 except ValueError:
                     errors.append("期日の日付形式が正しくありません。")
 
-            # エラーなし → 登録
             if not errors:
                 new_todo = Todo(
                     task=task,
                     description=description,
                     due=due_date,
-                    submission_destination=submission_destination,
+                    submission_destination=submission_destination or None,
                 )
                 session.add(new_todo)
                 session.commit()
                 session.close()
-                return redirect("/")  # PRG パターン
-        else:
-            # GET: フォーム初期化
-            pass
+                return redirect("/")
 
-        # 一覧取得（期日が近い順：NULL は後ろの方）
         todos = session.query(Todo).order_by(Todo.due.is_(None), Todo.due.asc()).all()
 
-        return render_template_string(
-            HTML, todos=todos, errors=errors, form=form_data
-        )
+        return render_template_string(HTML, todos=todos, errors=errors, form=form_data)
 
     finally:
         session.close()
