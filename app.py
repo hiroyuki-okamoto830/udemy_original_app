@@ -191,8 +191,8 @@ def index():
             if not task:
                 errors.append("タスクは必須です。")
 
-            if not submission_destination:
-                errors.append("提出先は必須です。")
+            # if not submission_destination:
+            #     errors.append("提出先は必須です。")
 
             due_date = None
             if due_str:

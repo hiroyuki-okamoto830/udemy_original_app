@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS todolist (
   task VARCHAR(200) NOT NULL,
   description TEXT,
   due DATE,
-  submission_destination VARCHAR(200) NOT NULL,
+  submission_destination VARCHAR(200) NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 """
