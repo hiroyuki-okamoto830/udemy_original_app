@@ -9,6 +9,7 @@ ToDo 管理アプリ（Render 用）
 """
 
 import os
+import json
 from datetime import datetime
 from flask import Flask, request, redirect, render_template_string
 from sqlalchemy import Column, Integer, String, Text, Date, DateTime
@@ -58,7 +59,7 @@ Base.metadata.create_all(engine)
 
 
 # -----------------------------
-# HTML（安全 JSON 渡し）
+# HTML（JSON を埋め込んで安全に受け渡し）
 # -----------------------------
 HTML = """
 <!doctype html>
@@ -69,16 +70,13 @@ HTML = """
 <style>
 body { font-family: sans-serif; margin: 30px; }
 .container { display: flex; gap: 40px; }
+form.inline { display:inline; }
 
-.modal-overlay {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.4);
-  display: none; justify-content: center; align-items: center;
-}
-.modal {
-  background: #fff; padding: 20px; width: 400px; border-radius: 8px;
-}
-.close-btn { float:right; cursor:pointer; font-size:18px; }
+/* モーダル */
+.modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0;
+  background:rgba(0,0,0,0.4); display:none; justify-content:center; align-items:center;}
+.modal { background:#fff; padding:20px; width:400px; border-radius:8px;}
+.close-btn { float:right; cursor:pointer; font-size:18px;}
 </style>
 </head>
 <body>
@@ -87,7 +85,7 @@ body { font-family: sans-serif; margin: 30px; }
 
 <div class="container">
 
-  <!-- 新規追加 -->
+  <!-- 新規登録フォーム -->
   <div class="form-box">
     <h2>新規ToDo追加</h2>
     <form method="POST">
@@ -114,22 +112,20 @@ body { font-family: sans-serif; margin: 30px; }
         <td>{{ item.due }}</td>
         <td>{{ item.submission_destination or "" }}</td>
 
-        <!-- 編集（安全 JSON で渡す） -->
+        <!-- 編集（JSON で渡す） -->
         <td>
-          <button onclick='openEditModal(
-            {{ {
-              "id": item.id,
-              "task": item.task,
-              "description": item.description,
-              "due": item.due|string if item.due else "",
-              "submission_destination": item.submission_destination
-            } | tojson }}
-          )'>編集</button>
+          <button onclick='openEditModal({ 
+              "id": {{ item.id }},
+              "task": {{ item.task|tojson }},
+              "description": {{ item.description|tojson }},
+              "due": {{ item.due|string|tojson }},
+              "submission_destination": {{ item.submission_destination|tojson }}
+          })'>編集</button>
         </td>
 
         <!-- 削除 -->
         <td>
-          <form method="POST" action="/delete/{{ item.id }}">
+          <form method="POST" action="/delete/{{ item.id }}" class="inline">
             <button type="submit" onclick="return confirm('削除しますか？');">削除</button>
           </form>
         </td>
@@ -156,8 +152,8 @@ body { font-family: sans-serif; margin: 30px; }
   </div>
 </div>
 
+
 <script>
-// モーダル開く
 function openEditModal(data) {
     document.getElementById("edit_task").value = data.task || "";
     document.getElementById("edit_description").value = data.description || "";
@@ -179,7 +175,7 @@ function closeEditModal() {
 
 
 # -----------------------------
-# 新規作成・一覧
+# 新規投稿・一覧
 # -----------------------------
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -189,54 +185,58 @@ def index():
             task = request.form.get("task", "").strip()
             description = request.form.get("description", "").strip()
             due_str = request.form.get("due", "").strip()
-            sub = request.form.get("submission_destination", "").strip()
+            submission_destination = request.form.get("submission_destination", "").strip()
 
             if task:
-                due = None
+                due_date = None
                 if due_str:
                     try:
-                        due = datetime.strptime(due_str, "%Y-%m-%d").date()
+                        due_date = datetime.strptime(due_str, "%Y-%m-%d").date()
                     except:
                         pass
 
-                session.add(Todo(
+                new = Todo(
                     task=task,
                     description=description,
-                    due=due,
-                    submission_destination=sub or None,
-                ))
+                    due=due_date,
+                    submission_destination=submission_destination or None,
+                )
+                session.add(new)
                 session.commit()
 
         todos = session.query(Todo).order_by(Todo.due.is_(None), Todo.due.asc()).all()
         return render_template_string(HTML, todos=todos)
+
     finally:
         session.close()
 
 
 # -----------------------------
-# 編集
+# 編集保存
 # -----------------------------
 @app.route("/edit/<int:todo_id>", methods=["POST"])
 def edit(todo_id):
     session = SessionLocal()
     try:
         item = session.query(Todo).filter_by(id=todo_id).first()
-        if item:
-            item.task = request.form.get("task", "").strip()
-            item.description = request.form.get("description", "").strip()
+        if not item:
+            return redirect("/")
 
-            due_str = request.form.get("due", "").strip()
-            item.due = None
-            if due_str:
-                try:
-                    item.due = datetime.strptime(due_str, "%Y-%m-%d").date()
-                except:
-                    pass
+        item.task = request.form.get("task", "").strip()
+        item.description = request.form.get("description", "").strip()
 
-            sub = request.form.get("submission_destination", "").strip()
-            item.submission_destination = sub or None
+        due_str = request.form.get("due", "").strip()
+        item.due = None
+        if due_str:
+            try:
+                item.due = datetime.strptime(due_str, "%Y-%m-%d").date()
+            except:
+                pass
 
-            session.commit()
+        sub = request.form.get("submission_destination", "").strip()
+        item.submission_destination = sub or None
+
+        session.commit()
         return redirect("/")
     finally:
         session.close()
