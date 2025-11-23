@@ -3,7 +3,7 @@
 
 import os
 from datetime import datetime
-from flask import Flask, request, redirect, render_template_string
+from flask import Flask, request, redirect, render_template
 from sqlalchemy import Column, Integer, String, Text, Date, DateTime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-
 
 # =========================================================
 #  DB 接続設定（Render / ローカル対応）
@@ -37,138 +36,11 @@ class Todo(Base):
     task = Column(String(200), nullable=False)
     description = Column(Text)
     due = Column(Date)
-    submission_destination = Column(String(200))  # 任意
+    submission_destination = Column(String(200))
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
 Base.metadata.create_all(engine)
-
-
-# =========================================================
-# HTML（1ファイル完結）
-# =========================================================
-HTML = """
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<title>ToDo管理アプリ（編集モーダル）</title>
-<style>
-body { font-family: sans-serif; margin: 30px; }
-.container { display: flex; gap: 40px; }
-form.inline { display:inline; }
-
-label { display:block; margin-top:10px; }
-input[type=text], input[type=date], textarea {
-    width:100%; padding:8px; margin-top:4px;
-}
-
-/* モーダル */
-.modal-overlay {
-    position:fixed; top:0; left:0; right:0; bottom:0;
-    background:rgba(0,0,0,0.4); display:none;
-    justify-content:center; align-items:center;
-}
-.modal {
-    background:#fff; padding:20px; width:400px;
-    border-radius:8px;
-}
-.close-btn { float:right; cursor:pointer; font-size:18px; }
-</style>
-</head>
-<body>
-
-<h1>ToDo管理アプリ</h1>
-
-<div class="container">
-
-  <!-- 新規登録 -->
-  <div class="form-box">
-    <h2>新規ToDo追加</h2>
-    <form method="POST">
-      <label>タスク <input type="text" name="task"></label>
-      <label>詳細説明 <textarea name="description"></textarea></label>
-      <label>期日 <input type="date" name="due"></label>
-      <label>提出先（任意） <input type="text" name="submission_destination"></label>
-      <button type="submit">登録</button>
-    </form>
-  </div>
-
-  <!-- 一覧 -->
-  <div class="list-box">
-    <h2>ToDo一覧</h2>
-    <table border="1" cellpadding="6">
-      <tr>
-        <th>ID</th><th>タスク</th><th>説明</th><th>期日</th><th>提出先</th><th>編集</th><th>削除</th>
-      </tr>
-
-      {% for item in todos %}
-      <tr>
-        <td>{{ item.id }}</td>
-        <td>{{ item.task }}</td>
-        <td>{{ item.description or "" }}</td>
-        <td>{{ item.due }}</td>
-        <td>{{ item.submission_destination or "" }}</td>
-
-        <td>
-          <button onclick='openEditModal({
-              "id": {{ item.id }},
-              "task": {{ item.task|tojson }},
-              "description": {{ item.description|tojson }},
-              "due": {{ (item.due.strftime("%Y-%m-%d") if item.due else "")|tojson }},
-              "submission_destination": {{ (item.submission_destination or "")|tojson }}
-          })'>編集</button>
-        </td>
-
-        <td>
-          <form method="POST" action="/delete/{{ item.id }}" class="inline">
-            <button type="submit" onclick="return confirm('削除しますか？');">削除</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-
-    </table>
-  </div>
-</div>
-
-
-<!-- 編集モーダル -->
-<div class="modal-overlay" id="editModal">
-  <div class="modal">
-    <span class="close-btn" onclick="closeEditModal()">✖</span>
-    <h3>ToDo編集</h3>
-
-    <form method="POST" id="editForm">
-      <label>タスク <input type="text" name="task" id="edit_task"></label>
-      <label>詳細説明 <textarea name="description" id="edit_description"></textarea></label>
-      <label>期日 <input type="date" name="due" id="edit_due"></label>
-      <label>提出先 <input type="text" name="submission_destination" id="edit_submission_destination"></label>
-      <button type="submit">更新</button>
-    </form>
-  </div>
-</div>
-
-
-<script>
-function openEditModal(data) {
-    document.getElementById("edit_task").value = data.task || "";
-    document.getElementById("edit_description").value = data.description || "";
-    document.getElementById("edit_due").value = data.due || "";
-    document.getElementById("edit_submission_destination").value = data.submission_destination || "";
-
-    document.getElementById("editForm").action = "/edit/" + data.id;
-    document.getElementById("editModal").style.display = "flex";
-}
-
-function closeEditModal() {
-    document.getElementById("editModal").style.display = "none";
-}
-</script>
-
-</body>
-</html>
-"""
 
 
 # =========================================================
@@ -202,7 +74,7 @@ def index():
                 session.commit()
 
         todos = session.query(Todo).order_by(Todo.due.is_(None), Todo.due.asc()).all()
-        return render_template_string(HTML, todos=todos)
+        return render_template("index.html", todos=todos)
 
     finally:
         session.close()

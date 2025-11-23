@@ -1,0 +1,20 @@
+body { font-family: sans-serif; margin: 30px; }
+.container { display: flex; gap: 40px; }
+form.inline { display:inline; }
+
+label { display:block; margin-top:10px; }
+input[type=text], input[type=date], textarea {
+    width:100%; padding:8px; margin-top:4px;
+}
+
+/* モーダル */
+.modal-overlay {
+    position:fixed; top:0; left:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.4); display:none;
+    justify-content:center; align-items:center;
+}
+.modal {
+    background:#fff; padding:20px; width:400px;
+    border-radius:8px;
+}
+.close-btn { float:right; cursor:pointer; font-size:18px; }
