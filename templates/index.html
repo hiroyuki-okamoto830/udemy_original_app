@@ -9,9 +9,15 @@
 
 <h1 class="title">ToDo管理アプリ</h1>
 
-<div class="container">
+<!-- ▽▽ タブメニュー ▽▽ -->
+<div class="tabs">
+    <button class="tab-button active" onclick="openTab('tab-add')">新規ToDo追加</button>
+    <button class="tab-button" onclick="openTab('tab-list')">ToDo一覧</button>
+</div>
+<!-- △△ タブメニュー △△ -->
 
-  <!-- 新規登録 -->
+<!-- ▽▽ タブ内容1：新規ToDo追加 ▽▽ -->
+<div id="tab-add" class="tab-content active">
   <div class="form-box">
     <h2>新規ToDo追加</h2>
     <form method="POST">
@@ -34,8 +40,12 @@
       <button type="submit" class="btn-primary">登録</button>
     </form>
   </div>
+</div>
+<!-- △△ タブ内容1 △△ -->
 
-  <!-- 一覧 -->
+
+<!-- ▽▽ タブ内容2：ToDo一覧 ▽▽ -->
+<div id="tab-list" class="tab-content">
   <div class="list-box">
     <h2>ToDo一覧</h2>
 
@@ -75,10 +85,11 @@
         </td>
       </tr>
       {% endfor %}
-    </table>
 
+    </table>
   </div>
 </div>
+<!-- △△ タブ内容2 △△ -->
 
 
 <!-- 編集モーダル -->
@@ -111,6 +122,16 @@
 
 
 <script>
+/* タブ切替 */
+function openTab(tabId) {
+    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+
+    event.target.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+}
+
+/* 編集モーダル */
 function openEditModal(data) {
     document.getElementById("edit_task").value = data.task || "";
     document.getElementById("edit_description").value = data.description || "";

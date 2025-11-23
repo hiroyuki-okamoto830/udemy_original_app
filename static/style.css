@@ -7,26 +7,49 @@ body {
 
 .title {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
-/* レイアウト */
-.container {
-    display: flex;
-    gap: 50px;
+/* タブ */
+.tabs {
+    text-align: center;
+    margin-bottom: 25px;
 }
+
+.tab-button {
+    padding: 10px 20px;
+    background: #ddd;
+    border: none;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 5px;
+}
+
+.tab-button.active {
+    background: #fff;
+    font-weight: bold;
+    box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
+}
+
+/* タブ内容 */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
 
 /* 左側フォーム（カード風） */
 .form-box {
-    width: 40%;
+    width: 50%;
+    margin: 0 auto;
     background: white;
     padding: 25px;
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-}
-
-.form-box h2 {
-    margin-bottom: 15px;
 }
 
 /* 入力欄 */
@@ -42,7 +65,6 @@ input[type=text], input[type=date], textarea {
     margin-top: 6px;
     border: 1px solid #ccc;
     border-radius: 6px;
-    background: #fff;
 }
 
 textarea {
@@ -65,9 +87,10 @@ textarea {
     opacity: 0.85;
 }
 
-/* 右側テーブル */
+/* 一覧テーブル */
 .list-box {
-    width: 60%;
+    width: 80%;
+    margin: 0 auto;
 }
 
 table {
@@ -86,7 +109,6 @@ th, td {
 
 th {
     background: #eaeaea;
-    font-weight: bold;
 }
 
 tr:nth-child(even) {
@@ -114,9 +136,7 @@ tr:nth-child(even) {
 }
 .btn-delete:hover { opacity: 0.85; }
 
-form.inline { display: inline; }
-
-/* モーダル改善 */
+/* モーダル */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -139,3 +159,5 @@ form.inline { display: inline; }
     cursor: pointer;
     font-size: 20px;
 }
+
+form.inline { display: inline; }
