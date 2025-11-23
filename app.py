@@ -1,12 +1,5 @@
 # app.py
 # -*- coding: utf-8 -*-
-"""
-ToDo 管理アプリ（Render 用）
-- 新規追加
-- 一覧表示
-- 削除
-- 編集（モーダルウインドウ）
-"""
 
 import os
 from datetime import datetime
@@ -17,27 +10,26 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from dotenv import load_dotenv
 
 load_dotenv()
+
 app = Flask(__name__)
 
-# -------------------------------------------------
-# ★ db_init.py と同じ DB URL に固定
-# -------------------------------------------------
-DATABASE_URL = (
-    "postgresql+psycopg2://"
-    "todolist_mvpv_user:BwWye7JQp52RkMDAe0BJYKJYL35QGVjm@"
-    "dpg-d4h8ai2dbo4c73bafql0-a.singapore-postgres.render.com/"
-    "todolist_mvpv"
-    "?sslmode=require"
-)
+
+# =========================================================
+#  DB 接続設定（Render / ローカル対応）
+# =========================================================
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
 
 engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
 
 
-# -----------------------------
-# モデル
-# -----------------------------
+# =========================================================
+#  モデル定義（提出先は任意）
+# =========================================================
 class Todo(Base):
     __tablename__ = "todolist"
 
@@ -45,16 +37,16 @@ class Todo(Base):
     task = Column(String(200), nullable=False)
     description = Column(Text)
     due = Column(Date)
-    submission_destination = Column(String(200))
+    submission_destination = Column(String(200))  # 任意
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
 Base.metadata.create_all(engine)
 
 
-# -----------------------------
-# HTML テンプレート（form.xxx を削除した安全版）
-# -----------------------------
+# =========================================================
+# HTML（1ファイル完結）
+# =========================================================
 HTML = """
 <!doctype html>
 <html lang="ja">
@@ -66,18 +58,22 @@ body { font-family: sans-serif; margin: 30px; }
 .container { display: flex; gap: 40px; }
 form.inline { display:inline; }
 
-/* モーダル */
-.modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0;
-  background:rgba(0,0,0,0.4); display:none; justify-content:center; align-items:center;}
-.modal { background:#fff; padding:20px; width:400px; border-radius:8px;}
-.close-btn { float:right; cursor:pointer; font-size:18px; }
-
 label { display:block; margin-top:10px; }
-input[type=text], input[type=date], textarea { width:100%; padding:8px; margin-top:4px; }
+input[type=text], input[type=date], textarea {
+    width:100%; padding:8px; margin-top:4px;
+}
 
-table { border-collapse: collapse; width:100%; margin-top:20px; }
-th, td { border:1px solid #ccc; padding:6px; }
-th { background:#f0f0f0; }
+/* モーダル */
+.modal-overlay {
+    position:fixed; top:0; left:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.4); display:none;
+    justify-content:center; align-items:center;
+}
+.modal {
+    background:#fff; padding:20px; width:400px;
+    border-radius:8px;
+}
+.close-btn { float:right; cursor:pointer; font-size:18px; }
 </style>
 </head>
 <body>
@@ -86,43 +82,24 @@ th { background:#f0f0f0; }
 
 <div class="container">
 
-  <!-- 左：新規追加フォーム -->
-  <div style="width:45%;">
+  <!-- 新規登録 -->
+  <div class="form-box">
     <h2>新規ToDo追加</h2>
-
     <form method="POST">
-      <label>タスク
-        <input type="text" name="task">
-      </label>
-
-      <label>詳細説明
-        <textarea name="description"></textarea>
-      </label>
-
-      <label>期日
-        <input type="date" name="due">
-      </label>
-
-      <label>提出先
-        <input type="text" name="submission_destination">
-      </label>
-
-      <button type="submit">登録する</button>
+      <label>タスク <input type="text" name="task"></label>
+      <label>詳細説明 <textarea name="description"></textarea></label>
+      <label>期日 <input type="date" name="due"></label>
+      <label>提出先（任意） <input type="text" name="submission_destination"></label>
+      <button type="submit">登録</button>
     </form>
   </div>
 
-  <!-- 右：一覧 -->
-  <div style="width:55%;">
+  <!-- 一覧 -->
+  <div class="list-box">
     <h2>ToDo一覧</h2>
-    <table>
+    <table border="1" cellpadding="6">
       <tr>
-        <th>ID</th>
-        <th>タスク</th>
-        <th>詳細</th>
-        <th>期日</th>
-        <th>提出先</th>
-        <th>編集</th>
-        <th>削除</th>
+        <th>ID</th><th>タスク</th><th>説明</th><th>期日</th><th>提出先</th><th>編集</th><th>削除</th>
       </tr>
 
       {% for item in todos %}
@@ -133,18 +110,16 @@ th { background:#f0f0f0; }
         <td>{{ item.due }}</td>
         <td>{{ item.submission_destination or "" }}</td>
 
-        <!-- 編集 -->
         <td>
           <button onclick='openEditModal({
-            "id": {{ item.id }},
-            "task": {{ item.task|tojson }},
-            "description": {{ item.description|tojson }},
-            "due": {{ item.due|string|tojson }},
-            "submission_destination": {{ item.submission_destination|tojson }}
+              "id": {{ item.id }},
+              "task": {{ item.task|tojson }},
+              "description": {{ item.description|tojson }},
+              "due": {{ (item.due.strftime("%Y-%m-%d") if item.due else "")|tojson }},
+              "submission_destination": {{ (item.submission_destination or "")|tojson }}
           })'>編集</button>
         </td>
 
-        <!-- 削除 -->
         <td>
           <form method="POST" action="/delete/{{ item.id }}" class="inline">
             <button type="submit" onclick="return confirm('削除しますか？');">削除</button>
@@ -152,9 +127,9 @@ th { background:#f0f0f0; }
         </td>
       </tr>
       {% endfor %}
+
     </table>
   </div>
-
 </div>
 
 
@@ -165,26 +140,15 @@ th { background:#f0f0f0; }
     <h3>ToDo編集</h3>
 
     <form method="POST" id="editForm">
-      <label>タスク
-        <input type="text" name="task" id="edit_task">
-      </label>
-
-      <label>詳細説明
-        <textarea name="description" id="edit_description"></textarea>
-      </label>
-
-      <label>期日
-        <input type="date" name="due" id="edit_due">
-      </label>
-
-      <label>提出先
-        <input type="text" name="submission_destination" id="edit_submission_destination">
-      </label>
-
+      <label>タスク <input type="text" name="task" id="edit_task"></label>
+      <label>詳細説明 <textarea name="description" id="edit_description"></textarea></label>
+      <label>期日 <input type="date" name="due" id="edit_due"></label>
+      <label>提出先 <input type="text" name="submission_destination" id="edit_submission_destination"></label>
       <button type="submit">更新</button>
     </form>
   </div>
 </div>
+
 
 <script>
 function openEditModal(data) {
@@ -207,9 +171,9 @@ function closeEditModal() {
 """
 
 
-# -----------------------------
-# 新規投稿・一覧
-# -----------------------------
+# =========================================================
+# 新規投稿 & 一覧
+# =========================================================
 @app.route("/", methods=["GET", "POST"])
 def index():
     session = SessionLocal()
@@ -244,9 +208,9 @@ def index():
         session.close()
 
 
-# -----------------------------
+# =========================================================
 # 編集保存
-# -----------------------------
+# =========================================================
 @app.route("/edit/<int:todo_id>", methods=["POST"])
 def edit(todo_id):
     session = SessionLocal()
@@ -271,13 +235,14 @@ def edit(todo_id):
 
         session.commit()
         return redirect("/")
+
     finally:
         session.close()
 
 
-# -----------------------------
+# =========================================================
 # 削除
-# -----------------------------
+# =========================================================
 @app.route("/delete/<int:todo_id>", methods=["POST"])
 def delete(todo_id):
     session = SessionLocal()
@@ -291,9 +256,9 @@ def delete(todo_id):
         session.close()
 
 
-# -----------------------------
-# 起動
-# -----------------------------
+# =========================================================
+# アプリ起動
+# =========================================================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     debug = os.environ.get("DEBUG", "false").lower() == "true"
