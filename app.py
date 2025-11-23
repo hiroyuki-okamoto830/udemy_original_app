@@ -3,7 +3,7 @@
 """
 Render（無料プラン）で動かせる最小構成の ToDo 管理アプリ
 Flask + SQLAlchemy + Render PostgreSQL（DATABASE_URL）
-単一ファイル構成。1ページで「一覧＋新規登録」を実装。
+単一ファイル構成。1ページで「一覧＋新規登録＋削除」を実装。
 """
 
 import os
@@ -75,6 +75,7 @@ button { margin-top: 15px; padding: 8px 16px; }
 table { border-collapse: collapse; width: 100%; margin-top: 10px; }
 th, td { border: 1px solid #ccc; padding: 6px; }
 th { background: #f0f0f0; }
+form.inline { display: inline; }
 </style>
 </head>
 <body>
@@ -125,17 +126,24 @@ th { background: #f0f0f0; }
       <tr>
         <th>ID</th>
         <th>タスク</th>
-        <th>詳細説明</th>  <!-- ★追加 -->
+        <th>詳細説明</th>
         <th>期日</th>
         <th>提出先</th>
+        <th>削除</th>   <!-- ★削除列 -->
       </tr>
+
       {% for item in todos %}
       <tr>
         <td>{{ item.id }}</td>
         <td>{{ item.task }}</td>
-        <td>{{ item.description or "" }}</td>   <!-- ★追加 -->
+        <td>{{ item.description or "" }}</td>
         <td>{{ item.due }}</td>
         <td>{{ item.submission_destination or "" }}</td>
+        <td>
+          <form method="POST" action="/delete/{{ item.id }}" class="inline">
+            <button type="submit" onclick="return confirm('削除しますか？');">削除</button>
+          </form>
+        </td>
       </tr>
       {% endfor %}
     </table>
@@ -193,11 +201,27 @@ def index():
                 return redirect("/")
 
         todos = session.query(Todo).order_by(Todo.due.is_(None), Todo.due.asc()).all()
-
         return render_template_string(HTML, todos=todos, errors=errors, form=form_data)
 
     finally:
         session.close()
+
+
+# ------------------------
+# 削除機能（★今回追加）
+# ------------------------
+@app.route("/delete/<int:todo_id>", methods=["POST"])
+def delete(todo_id):
+    session = SessionLocal()
+    try:
+        item = session.query(Todo).filter(Todo.id == todo_id).first()
+        if item:
+            session.delete(item)
+            session.commit()
+        return redirect("/")
+    finally:
+        session.close()
+
 
 # ------------------------
 # アプリ起動
