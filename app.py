@@ -11,6 +11,7 @@ from datetime import datetime
 from flask import Flask, request, redirect, render_template_string
 from sqlalchemy import Column, Integer, String, Text, Date, DateTime
 from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 from sqlalchemy.orm import declarative_base, sessionmaker
 from dotenv import load_dotenv
 
